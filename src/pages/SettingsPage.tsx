@@ -123,7 +123,7 @@ function GeneralTab({ orgId }: { orgId: string }) {
             <Label htmlFor="orgName">Organization Name</Label>
             <Input
               id="orgName"
-              value={name}
+              value={displayName}
               onChange={(e) => setName(e.target.value)}
               placeholder="Acme Inc."
               required
