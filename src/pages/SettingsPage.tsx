@@ -94,7 +94,7 @@ function GeneralTab({ orgId }: { orgId: string }) {
     mutationFn: async () => {
       const { error } = await supabase
         .from("organizations")
-        .update({ name })
+        .update({ name: displayName })
         .eq("id", orgId);
       if (error) throw error;
     },
