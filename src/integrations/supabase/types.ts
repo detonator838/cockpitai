@@ -122,6 +122,47 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          organization_id: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          organization_id: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          organization_id?: string
+          target_id?: string
+          target_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           agent_id: string
@@ -131,6 +172,7 @@ export type Database = {
           id: string
           organization_id: string
           raw_payload: Json | null
+          read: boolean
           severity: Database["public"]["Enums"]["event_severity"]
           status: Database["public"]["Enums"]["event_status"]
           title: string
@@ -143,6 +185,7 @@ export type Database = {
           id?: string
           organization_id: string
           raw_payload?: Json | null
+          read?: boolean
           severity?: Database["public"]["Enums"]["event_severity"]
           status?: Database["public"]["Enums"]["event_status"]
           title: string
@@ -155,6 +198,7 @@ export type Database = {
           id?: string
           organization_id?: string
           raw_payload?: Json | null
+          read?: boolean
           severity?: Database["public"]["Enums"]["event_severity"]
           status?: Database["public"]["Enums"]["event_status"]
           title?: string
