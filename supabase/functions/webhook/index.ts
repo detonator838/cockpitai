@@ -187,6 +187,9 @@ Deno.serve(async (req) => {
       );
     }
 
+    const inboxUrl = Deno.env.get("APP_URL") || "https://id-preview--b9545e34-3ca3-41d3-929e-0e0ab6ed2e4d.lovable.app";
+    const agentName = agent.name || agentId;
+
     // Create approval request if needed
     if (needsApproval) {
       const { error: approvalError } = await supabase
@@ -204,8 +207,8 @@ Deno.serve(async (req) => {
       // Send email for new approval request
       await sendNotificationEmail(
         agent.owner_email,
-        `🔔 Approval Required: ${title.substring(0, 100)}`,
-        buildApprovalEmailHtml(agent.name || agentId, title, description || "")
+        `Action Required: ${agentName} needs your approval`,
+        buildApprovalEmailHtml(agentName, title, description || "", `${inboxUrl}/inbox`)
       );
     }
 
@@ -213,8 +216,8 @@ Deno.serve(async (req) => {
     if (sev === "error" || sev === "critical") {
       await sendNotificationEmail(
         agent.owner_email,
-        `🚨 ${sev.toUpperCase()} Alert: ${title.substring(0, 100)}`,
-        buildAlertEmailHtml(agent.name || agentId, sev, title, description || "")
+        `Alert: ${agentName} reported an error`,
+        buildAlertEmailHtml(agentName, sev, title, description || "", `${inboxUrl}/inbox`)
       );
     }
 
