@@ -139,7 +139,7 @@ export default function Agents() {
   };
 
   const webhookUrl = (agentId: string) =>
-    `${window.location.origin}/api/webhook/${agentId}`;
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/webhook/${agentId}`;
 
   const resetDialog = () => {
     setCreatedAgent(null);
