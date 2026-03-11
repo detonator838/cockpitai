@@ -6,7 +6,69 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-Deno.serve(async (req) => {
+async function sendNotificationEmail(to: string, subject: string, htmlContent: string) {
+  try {
+    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+    if (!BREVO_API_KEY) {
+      console.error("BREVO_API_KEY not configured, skipping email");
+      return;
+    }
+
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": BREVO_API_KEY,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: "Agent Monitor", email: "noreply@brevo.com" },
+        to: [{ email: to }],
+        subject,
+        htmlContent,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      console.error("Brevo email error:", data);
+    }
+  } catch (err) {
+    console.error("Email send failed:", err);
+  }
+}
+
+function buildAlertEmailHtml(agentName: string, severity: string, title: string, description: string): string {
+  const color = severity === "critical" ? "#dc2626" : "#ea580c";
+  return `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+      <div style="background:${color};color:#fff;padding:16px 24px;border-radius:8px 8px 0 0;">
+        <h2 style="margin:0;">${severity.toUpperCase()} Alert</h2>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-top:0;padding:24px;border-radius:0 0 8px 8px;">
+        <p style="margin:0 0 8px;color:#6b7280;font-size:14px;">Agent: <strong>${agentName}</strong></p>
+        <h3 style="margin:0 0 12px;">${title}</h3>
+        ${description ? `<p style="margin:0;color:#374151;">${description.substring(0, 500)}</p>` : ""}
+      </div>
+    </div>`;
+}
+
+function buildApprovalEmailHtml(agentName: string, title: string, description: string): string {
+  return `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+      <div style="background:#2563eb;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0;">
+        <h2 style="margin:0;">Approval Required</h2>
+      </div>
+      <div style="border:1px solid #e5e7eb;border-top:0;padding:24px;border-radius:0 0 8px 8px;">
+        <p style="margin:0 0 8px;color:#6b7280;font-size:14px;">Agent: <strong>${agentName}</strong></p>
+        <h3 style="margin:0 0 12px;">${title}</h3>
+        ${description ? `<p style="margin:0 0 16px;color:#374151;">${description.substring(0, 500)}</p>` : ""}
+        <p style="margin:0;color:#6b7280;font-size:14px;">Please review this action in your dashboard.</p>
+      </div>
+    </div>`;
+}
+
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
