@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      agents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          owner_email: string
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          status: Database["public"]["Enums"]["agent_status"]
+          type: Database["public"]["Enums"]["agent_type"]
+          updated_at: string
+          webhook_secret: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          owner_email: string
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          status?: Database["public"]["Enums"]["agent_status"]
+          type?: Database["public"]["Enums"]["agent_type"]
+          updated_at?: string
+          webhook_secret?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          owner_email?: string
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          status?: Database["public"]["Enums"]["agent_status"]
+          type?: Database["public"]["Enums"]["agent_type"]
+          updated_at?: string
+          webhook_secret?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -113,7 +166,10 @@ export type Database = {
       }
     }
     Enums: {
+      agent_status: "active" | "paused"
+      agent_type: "hubspot" | "zapier" | "github" | "intercom" | "custom"
       app_role: "owner" | "admin" | "member"
+      risk_level: "low" | "medium" | "high"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -241,7 +297,10 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      agent_status: ["active", "paused"],
+      agent_type: ["hubspot", "zapier", "github", "intercom", "custom"],
       app_role: ["owner", "admin", "member"],
+      risk_level: ["low", "medium", "high"],
     },
   },
 } as const
