@@ -33,12 +33,12 @@ Deno.serve(async (req) => {
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        "api-key": BREVO_API_KEY,
+        "api-key": apiKey,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
       body: JSON.stringify({
-        sender: { name: "Agent Monitor", email: "noreply@brevo.com" },
+        sender: { name: "Agent Monitor", email: "sdjrushikesh5751@gmail.com" },
         to: [{ email: to }],
         subject,
         htmlContent,
