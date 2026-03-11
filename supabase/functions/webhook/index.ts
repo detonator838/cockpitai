@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
     // Fetch agent and validate secret
     const { data: agent, error: agentError } = await supabase
       .from("agents")
-      .select("id, organization_id, risk_level, webhook_secret, status")
+      .select("id, name, organization_id, risk_level, webhook_secret, status, owner_email")
       .eq("id", agentId)
       .single();
 
