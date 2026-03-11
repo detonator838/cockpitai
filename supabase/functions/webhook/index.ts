@@ -68,7 +68,7 @@ function buildApprovalEmailHtml(agentName: string, title: string, description: s
     </div>`;
 }
 
-
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
