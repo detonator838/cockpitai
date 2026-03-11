@@ -16,9 +16,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
-    if (!BREVO_API_KEY) {
-      throw new Error("BREVO_API_KEY is not configured");
+    const apiKey = Deno.env.get("BREVO_SMTP_PASSWORD") || Deno.env.get("BREVO_API_KEY");
+    if (!apiKey) {
+      throw new Error("BREVO_SMTP_PASSWORD is not configured");
     }
 
     const { to, subject, htmlContent } = (await req.json()) as EmailPayload;
@@ -33,12 +33,12 @@ Deno.serve(async (req) => {
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        "api-key": BREVO_API_KEY,
+        "api-key": apiKey,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
       body: JSON.stringify({
-        sender: { name: "Agent Monitor", email: "noreply@brevo.com" },
+        sender: { name: "Agent Monitor", email: "sdjrushikesh5751@gmail.com" },
         to: [{ email: to }],
         subject,
         htmlContent,

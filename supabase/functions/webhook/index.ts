@@ -8,21 +8,21 @@ const corsHeaders = {
 
 async function sendNotificationEmail(to: string, subject: string, htmlContent: string) {
   try {
-    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
-    if (!BREVO_API_KEY) {
-      console.error("BREVO_API_KEY not configured, skipping email");
+    const apiKey = Deno.env.get("BREVO_SMTP_PASSWORD") || Deno.env.get("BREVO_API_KEY");
+    if (!apiKey) {
+      console.error("BREVO_SMTP_PASSWORD not configured, skipping email");
       return;
     }
 
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        "api-key": BREVO_API_KEY,
+        "api-key": apiKey,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
       body: JSON.stringify({
-        sender: { name: "Agent Monitor", email: "noreply@brevo.com" },
+        sender: { name: "Agent Monitor", email: "sdjrushikesh5751@gmail.com" },
         to: [{ email: to }],
         subject,
         htmlContent,
