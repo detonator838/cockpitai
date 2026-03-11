@@ -299,34 +299,83 @@ function TeamTab({ orgId, userId }: { orgId: string; userId: string }) {
 }
 
 /* ─── Billing Tab ─── */
+const pricingPlans = [
+  {
+    title: "Early Adopter Special",
+    price: "₹1,000",
+    note: "First 10 customers only. Locked in for 12 months.",
+    features: ["Up to 5 agents", "5 users", "All core features"],
+    button: "Get This Deal",
+    href: "https://rzp.io/rzp/lcctyRF",
+    highlighted: true,
+  },
+  {
+    title: "Starter",
+    price: "₹2,500",
+    features: ["Up to 5 agents", "5 users", "All core features"],
+    button: "Choose Starter",
+    href: "https://rzp.io/rzp/HDHKbdV",
+  },
+  {
+    title: "Growth",
+    price: "₹6,500",
+    features: ["Up to 20 agents", "25 users", "Priority support"],
+    button: "Choose Growth",
+    href: "https://rzp.io/rzp/PSHAtdw",
+  },
+];
+
 function BillingTab() {
-  const trialEnd = new Date();
-  trialEnd.setDate(trialEnd.getDate() + 14);
-
   return (
-    <div className="space-y-6 max-w-lg">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" /> Current Plan
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold text-foreground">Free Trial</p>
-              <p className="text-sm text-muted-foreground">
-                Expires on {format(trialEnd, "MMMM d, yyyy")}
-              </p>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {pricingPlans.map((plan) => (
+        <Card
+          key={plan.title}
+          className={cn(
+            "relative flex flex-col",
+            plan.highlighted && "border-primary shadow-lg ring-2 ring-primary/20"
+          )}
+        >
+          {plan.highlighted && (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+              <Badge className="bg-primary text-primary-foreground">
+                <Sparkles className="h-3 w-3 mr-1" /> Most Popular
+              </Badge>
             </div>
-            <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-200">Active</Badge>
+          )}
+          <CardHeader className="text-center pt-8">
+            <CardTitle className="text-lg">{plan.title}</CardTitle>
+            <div className="mt-2">
+              <span className="text-3xl font-bold text-foreground">{plan.price}</span>
+              <span className="text-muted-foreground text-sm">/month</span>
+            </div>
+            {plan.note && (
+              <p className="text-xs text-muted-foreground mt-1">{plan.note}</p>
+            )}
+          </CardHeader>
+          <CardContent className="flex-1 space-y-3">
+            <ul className="space-y-2">
+              {plan.features.map((f) => (
+                <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+          <div className="p-6 pt-0">
+            <Button
+              className="w-full"
+              variant={plan.highlighted ? "default" : "outline"}
+              asChild
+            >
+              <a href={plan.href} target="_blank" rel="noopener noreferrer">
+                {plan.button}
+              </a>
+            </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      <Button className="w-full" variant="default">
-        <Sparkles className="h-4 w-4 mr-2" /> Upgrade Plan
-      </Button>
+        </Card>
+      ))}
     </div>
   );
 }
