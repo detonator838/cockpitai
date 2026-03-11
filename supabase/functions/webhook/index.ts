@@ -137,6 +137,22 @@ Deno.serve(async (req) => {
       if (approvalError) {
         console.error("Approval insert error:", approvalError);
       }
+
+      // Send email for new approval request
+      await sendNotificationEmail(
+        agent.owner_email,
+        `🔔 Approval Required: ${title.substring(0, 100)}`,
+        buildApprovalEmailHtml(agent.name || agentId, title, description || "")
+      );
+    }
+
+    // Send email for error/critical severity events
+    if (sev === "error" || sev === "critical") {
+      await sendNotificationEmail(
+        agent.owner_email,
+        `🚨 ${sev.toUpperCase()} Alert: ${title.substring(0, 100)}`,
+        buildAlertEmailHtml(agent.name || agentId, sev, title, description || "")
+      );
     }
 
     return new Response(
