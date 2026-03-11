@@ -67,6 +67,115 @@ export type Database = {
           },
         ]
       }
+      approval_requests: {
+        Row: {
+          agent_id: string
+          created_at: string
+          event_id: string
+          id: string
+          organization_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+          organization_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          organization_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_requests_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          agent_id: string
+          created_at: string
+          description: string | null
+          event_type: string
+          id: string
+          organization_id: string
+          raw_payload: Json | null
+          severity: Database["public"]["Enums"]["event_severity"]
+          status: Database["public"]["Enums"]["event_status"]
+          title: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          description?: string | null
+          event_type: string
+          id?: string
+          organization_id: string
+          raw_payload?: Json | null
+          severity?: Database["public"]["Enums"]["event_severity"]
+          status?: Database["public"]["Enums"]["event_status"]
+          title: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          description?: string | null
+          event_type?: string
+          id?: string
+          organization_id?: string
+          raw_payload?: Json | null
+          severity?: Database["public"]["Enums"]["event_severity"]
+          status?: Database["public"]["Enums"]["event_status"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -169,6 +278,8 @@ export type Database = {
       agent_status: "active" | "paused"
       agent_type: "hubspot" | "zapier" | "github" | "intercom" | "custom"
       app_role: "owner" | "admin" | "member"
+      event_severity: "info" | "warning" | "error" | "critical"
+      event_status: "logged" | "pending_approval" | "approved" | "rejected"
       risk_level: "low" | "medium" | "high"
     }
     CompositeTypes: {
@@ -300,6 +411,8 @@ export const Constants = {
       agent_status: ["active", "paused"],
       agent_type: ["hubspot", "zapier", "github", "intercom", "custom"],
       app_role: ["owner", "admin", "member"],
+      event_severity: ["info", "warning", "error", "critical"],
+      event_status: ["logged", "pending_approval", "approved", "rejected"],
       risk_level: ["low", "medium", "high"],
     },
   },
