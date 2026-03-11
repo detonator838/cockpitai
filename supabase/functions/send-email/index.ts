@@ -16,9 +16,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
-    if (!BREVO_API_KEY) {
-      throw new Error("BREVO_API_KEY is not configured");
+    const apiKey = Deno.env.get("BREVO_SMTP_PASSWORD") || Deno.env.get("BREVO_API_KEY");
+    if (!apiKey) {
+      throw new Error("BREVO_SMTP_PASSWORD is not configured");
     }
 
     const { to, subject, htmlContent } = (await req.json()) as EmailPayload;
