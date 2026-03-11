@@ -83,9 +83,12 @@ function GeneralTab({ orgId }: { orgId: string }) {
     },
   });
 
-  const [name, setName] = useState("");
-  const initialized = org && !name && name !== org.name;
-  if (initialized) setName(org.name);
+  const [name, setName] = useState<string | null>(null);
+  const displayName = name ?? org?.name ?? "";
+
+  if (org && name === null) {
+    setName(org.name);
+  }
 
   const updateOrg = useMutation({
     mutationFn: async () => {
