@@ -38,7 +38,7 @@ async function sendNotificationEmail(to: string, subject: string, htmlContent: s
   }
 }
 
-function buildAlertEmailHtml(agentName: string, severity: string, title: string, description: string): string {
+function buildAlertEmailHtml(agentName: string, severity: string, title: string, description: string, inboxUrl: string): string {
   const color = severity === "critical" ? "#dc2626" : "#ea580c";
   return `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;">
@@ -48,22 +48,23 @@ function buildAlertEmailHtml(agentName: string, severity: string, title: string,
       <div style="border:1px solid #e5e7eb;border-top:0;padding:24px;border-radius:0 0 8px 8px;">
         <p style="margin:0 0 8px;color:#6b7280;font-size:14px;">Agent: <strong>${agentName}</strong></p>
         <h3 style="margin:0 0 12px;">${title}</h3>
-        ${description ? `<p style="margin:0;color:#374151;">${description.substring(0, 500)}</p>` : ""}
+        ${description ? `<p style="margin:0 0 16px;color:#374151;">${description.substring(0, 500)}</p>` : ""}
+        <a href="${inboxUrl}" style="display:inline-block;background:${color};color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">View in Inbox</a>
       </div>
     </div>`;
 }
 
-function buildApprovalEmailHtml(agentName: string, title: string, description: string): string {
+function buildApprovalEmailHtml(agentName: string, title: string, description: string, inboxUrl: string): string {
   return `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;">
       <div style="background:#2563eb;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0;">
-        <h2 style="margin:0;">Approval Required</h2>
+        <h2 style="margin:0;">Action Required</h2>
       </div>
       <div style="border:1px solid #e5e7eb;border-top:0;padding:24px;border-radius:0 0 8px 8px;">
         <p style="margin:0 0 8px;color:#6b7280;font-size:14px;">Agent: <strong>${agentName}</strong></p>
         <h3 style="margin:0 0 12px;">${title}</h3>
         ${description ? `<p style="margin:0 0 16px;color:#374151;">${description.substring(0, 500)}</p>` : ""}
-        <p style="margin:0;color:#6b7280;font-size:14px;">Please review this action in your dashboard.</p>
+        <a href="${inboxUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">Review in Inbox</a>
       </div>
     </div>`;
 }
