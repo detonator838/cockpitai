@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +16,7 @@ import {
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { UserPlus, CreditCard, Sparkles } from "lucide-react";
+import { UserPlus, CreditCard, Sparkles, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
