@@ -10,7 +10,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <header className="h-14 flex items-center border-b bg-card px-4">
             <SidebarTrigger className="mr-4" />
             <h2 className="text-sm font-medium text-muted-foreground">
-              Cockpit MVP
+              Cockpit AI
             </h2>
           </header>
           <main className="flex-1 p-6">{children}</main>

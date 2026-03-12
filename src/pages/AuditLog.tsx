@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table, TableBody, TableCell, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
 import { Search } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -18,11 +19,14 @@ type AuditRow = {
   metadata: Record<string, any> | null;
   created_at: string;
   profiles: { full_name: string; email: string | null } | null;
+  actor: string;
+  details: string;
 };
 
 export default function AuditLog() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
+  const { sortKey, sortDir, onSort, sortFn } = useTableSort("created_at", "desc");
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -50,27 +54,27 @@ export default function AuditLog() {
         .eq("organization_id", orgId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as unknown as AuditRow[];
+      return (data as any[]).map((log: any) => {
+        const actor = log.profiles?.full_name || log.profiles?.email || "System";
+        const parts = [`${log.target_type}:${log.target_id.slice(0, 8)}…`];
+        if (log.metadata && Object.keys(log.metadata).length > 0) {
+          const entries = Object.entries(log.metadata).slice(0, 2);
+          for (const [k, v] of entries) {
+            parts.push(`${k}=${typeof v === "string" ? v.slice(0, 20) : v}`);
+          }
+        }
+        return { ...log, actor, details: parts.join(" · ") };
+      }) as AuditRow[];
     },
   });
 
   const q = search.toLowerCase();
   const filtered = logs.filter((log) => {
     if (!q) return true;
-    const actor = log.profiles?.full_name || log.profiles?.email || "";
-    return actor.toLowerCase().includes(q) || log.action.toLowerCase().includes(q);
+    return log.actor.toLowerCase().includes(q) || log.action.toLowerCase().includes(q);
   });
 
-  const detailsSummary = (log: AuditRow) => {
-    const parts = [`${log.target_type}:${log.target_id.slice(0, 8)}…`];
-    if (log.metadata && Object.keys(log.metadata).length > 0) {
-      const entries = Object.entries(log.metadata).slice(0, 2);
-      for (const [k, v] of entries) {
-        parts.push(`${k}=${typeof v === "string" ? v.slice(0, 20) : v}`);
-      }
-    }
-    return parts.join(" · ");
-  };
+  const sorted = sortFn(filtered);
 
   return (
     <div className="space-y-6">
@@ -93,10 +97,10 @@ export default function AuditLog() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Actor</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Details</TableHead>
-              <TableHead className="text-right">Time</TableHead>
+              <SortableTableHead label="Actor" sortKey="actor" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Action" sortKey="action" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Details" sortKey="details" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Time" sortKey="created_at" currentSort={sortKey} currentDir={sortDir} onSort={onSort} className="text-right" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -104,23 +108,21 @@ export default function AuditLog() {
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Loading…</TableCell>
               </TableRow>
-            ) : filtered.length === 0 ? (
+            ) : sorted.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   {search ? "No matching entries." : "No audit log entries yet."}
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((log) => (
+              sorted.map((log) => (
                 <TableRow key={log.id}>
-                  <TableCell className="font-medium">
-                    {log.profiles?.full_name || log.profiles?.email || "System"}
-                  </TableCell>
+                  <TableCell className="font-medium">{log.actor}</TableCell>
                   <TableCell>
                     <code className="text-sm bg-muted px-1.5 py-0.5 rounded">{log.action}</code>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
-                    {detailsSummary(log)}
+                    {log.details}
                   </TableCell>
                   <TableCell className="text-right text-sm text-muted-foreground whitespace-nowrap">
                     {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
