@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,12 +16,13 @@ import {
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { UserPlus, CreditCard, Sparkles } from "lucide-react";
+import { UserPlus, CreditCard, Sparkles, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data: profile } = useQuery({
@@ -38,6 +40,11 @@ export default function SettingsPage() {
   });
 
   const orgId = profile?.organization_id;
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <div className="space-y-6">
@@ -63,6 +70,17 @@ export default function SettingsPage() {
           <BillingTab />
         </TabsContent>
       </Tabs>
+
+      <div className="border-t pt-6">
+        <Button
+          variant="ghost"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Log Out
+        </Button>
+      </div>
     </div>
   );
 }
