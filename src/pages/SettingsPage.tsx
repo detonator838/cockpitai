@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -102,18 +102,24 @@ function GeneralTab({ orgId }: { orgId: string }) {
     },
   });
 
-  const [name, setName] = useState<string | null>(null);
-  const displayName = name ?? org?.name ?? "";
+  const [name, setName] = useState("");
+  const [initialized, setInitialized] = useState(false);
 
-  if (org && name === null) {
-    setName(org.name);
-  }
+  useEffect(() => {
+    if (org && !initialized) {
+      setName(org.name);
+      setInitialized(true);
+    }
+  }, [org, initialized]);
+
+  const savedName = org?.name ?? "";
+  const isDirty = name !== savedName;
 
   const updateOrg = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
         .from("organizations")
-        .update({ name: displayName })
+        .update({ name })
         .eq("id", orgId);
       if (error) throw error;
     },
@@ -142,15 +148,17 @@ function GeneralTab({ orgId }: { orgId: string }) {
             <Label htmlFor="orgName">Organization Name</Label>
             <Input
               id="orgName"
-              value={displayName}
+              value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Acme Inc."
               required
             />
           </div>
-          <Button type="submit" disabled={updateOrg.isPending}>
-            {updateOrg.isPending ? "Saving…" : "Save"}
-          </Button>
+          {isDirty && (
+            <Button type="submit" disabled={updateOrg.isPending}>
+              {updateOrg.isPending ? "Saving…" : "Save"}
+            </Button>
+          )}
         </form>
       </CardContent>
     </Card>

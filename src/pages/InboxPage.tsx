@@ -4,13 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table, TableBody, TableCell, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Check, X } from "lucide-react";
+import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
+import { Check, X, Search } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -38,6 +40,7 @@ type EventRow = {
   read: boolean;
   created_at: string;
   agents: { name: string } | null;
+  agentName: string;
 };
 
 export default function InboxPage() {
@@ -46,6 +49,8 @@ export default function InboxPage() {
   const [agentFilter, setAgentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const { sortKey, sortDir, onSort, sortFn } = useTableSort("created_at", "desc");
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -73,22 +78,24 @@ export default function InboxPage() {
         .eq("organization_id", orgId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as unknown as EventRow[];
+      return (data as any[]).map((e) => ({ ...e, agentName: e.agents?.name || "Unknown" })) as EventRow[];
     },
   });
 
-  // Unique agents for filter
   const agentOptions = Array.from(
-    new Map(events.map((e) => [e.agent_id, e.agents?.name || "Unknown"])).entries()
+    new Map(events.map((e) => [e.agent_id, e.agentName])).entries()
   );
 
-  // Filtered events
+  const q = search.toLowerCase();
   const filtered = events.filter((e) => {
     if (agentFilter !== "all" && e.agent_id !== agentFilter) return false;
     if (statusFilter !== "all" && e.status !== statusFilter) return false;
     if (severityFilter !== "all" && e.severity !== severityFilter) return false;
+    if (q && !e.title.toLowerCase().includes(q) && !e.agentName.toLowerCase().includes(q)) return false;
     return true;
   });
+
+  const sorted = sortFn(filtered);
 
   const markRead = useMutation({
     mutationFn: async (eventId: string) => {
@@ -103,14 +110,11 @@ export default function InboxPage() {
 
   const handleDecision = useMutation({
     mutationFn: async ({ eventId, agentId, decision }: { eventId: string; agentId: string; decision: "approved" | "rejected" }) => {
-      // Update event status
       const { error: eventErr } = await supabase
         .from("events")
         .update({ status: decision } as any)
         .eq("id", eventId);
       if (eventErr) throw eventErr;
-
-      // Update approval request
       const { error: approvalErr } = await supabase
         .from("approval_requests")
         .update({
@@ -120,8 +124,6 @@ export default function InboxPage() {
         } as any)
         .eq("event_id", eventId);
       if (approvalErr) throw approvalErr;
-
-      // Write audit log
       const { error: auditErr } = await supabase
         .from("audit_log")
         .insert({
@@ -148,8 +150,12 @@ export default function InboxPage() {
         <p className="mt-1 text-muted-foreground">Review events and approve actions from your agents.</p>
       </div>
 
-      {/* Filters */}
+      {/* Search + Filters */}
       <div className="flex flex-wrap gap-3">
+        <div className="relative w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search events…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        </div>
         <Select value={agentFilter} onValueChange={setAgentFilter}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Agents" /></SelectTrigger>
           <SelectContent>
@@ -159,7 +165,6 @@ export default function InboxPage() {
             ))}
           </SelectContent>
         </Select>
-
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Status" /></SelectTrigger>
           <SelectContent>
@@ -170,7 +175,6 @@ export default function InboxPage() {
             <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
-
         <Select value={severityFilter} onValueChange={setSeverityFilter}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Severity" /></SelectTrigger>
           <SelectContent>
@@ -188,13 +192,13 @@ export default function InboxPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-8"></TableHead>
-              <TableHead>Agent</TableHead>
-              <TableHead>Event</TableHead>
-              <TableHead>Severity</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <SortableTableHead label="" sortKey="" currentSort="" currentDir="asc" onSort={() => {}} className="w-8" />
+              <SortableTableHead label="Agent" sortKey="agentName" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Event" sortKey="title" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Severity" sortKey="severity" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Time" sortKey="created_at" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Status" sortKey="status" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Actions" sortKey="" currentSort="" currentDir="asc" onSort={() => {}} className="text-right" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -202,14 +206,14 @@ export default function InboxPage() {
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading…</TableCell>
               </TableRow>
-            ) : filtered.length === 0 ? (
+            ) : sorted.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   No events found.
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((event) => (
+              sorted.map((event) => (
                 <TableRow
                   key={event.id}
                   className={!event.read ? "bg-accent/30 cursor-pointer" : "cursor-pointer"}
@@ -222,7 +226,7 @@ export default function InboxPage() {
                       <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">{event.agents?.name || "Unknown"}</TableCell>
+                  <TableCell className="font-medium">{event.agentName}</TableCell>
                   <TableCell>{event.title}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={severityColors[event.severity]}>

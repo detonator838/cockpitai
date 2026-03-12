@@ -8,15 +8,23 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table, TableBody, TableCell, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Copy, Check } from "lucide-react";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { SortableTableHead, useTableSort } from "@/components/SortableTableHead";
+import { Plus, Copy, Check, Search, Pause, Play, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -63,6 +71,9 @@ export default function Agents() {
   const [open, setOpen] = useState(false);
   const [createdAgent, setCreatedAgent] = useState<AgentRow | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [viewAgent, setViewAgent] = useState<AgentRow | null>(null);
+  const { sortKey, sortDir, onSort, sortFn } = useTableSort("created_at", "desc");
 
   // Form state
   const [name, setName] = useState("");
@@ -131,6 +142,33 @@ export default function Agents() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const toggleStatus = useMutation({
+    mutationFn: async ({ id, newStatus }: { id: string; newStatus: string }) => {
+      const { error } = await supabase
+        .from("agents")
+        .update({ status: newStatus } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+      toast.success("Agent status updated");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const deleteAgent = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("agents").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+      toast.success("Agent deleted");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const handleCopy = async (text: string, field: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedField(field);
@@ -145,6 +183,13 @@ export default function Agents() {
     setCreatedAgent(null);
     setOpen(false);
   };
+
+  const q = search.toLowerCase();
+  const filtered = agents.filter((a) => {
+    if (!q) return true;
+    return a.name.toLowerCase().includes(q) || a.type.toLowerCase().includes(q) || a.owner_email.toLowerCase().includes(q);
+  });
+  const sorted = sortFn(filtered);
 
   return (
     <div className="space-y-6">
@@ -164,11 +209,9 @@ export default function Agents() {
               <>
                 <DialogHeader>
                   <DialogTitle>Agent Created Successfully</DialogTitle>
+                  <DialogDescription>Save the webhook URL and secret below. The secret won't be shown again.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                  <p className="text-sm text-muted-foreground">
-                    Save the webhook URL and secret below. The secret won't be shown again.
-                  </p>
                   <div className="space-y-2">
                     <Label>Webhook URL</Label>
                     <div className="flex items-center gap-2">
@@ -252,30 +295,36 @@ export default function Agents() {
         </Dialog>
       </div>
 
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Search agents…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      </div>
+
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Risk Level</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date Added</TableHead>
+              <SortableTableHead label="Name" sortKey="name" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Type" sortKey="type" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Risk Level" sortKey="risk_level" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Status" sortKey="status" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Date Added" sortKey="created_at" currentSort={sortKey} currentDir={sortDir} onSort={onSort} />
+              <SortableTableHead label="Actions" sortKey="" currentSort="" currentDir="asc" onSort={() => {}} className="text-right" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading…</TableCell>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading…</TableCell>
               </TableRow>
-            ) : agents.length === 0 ? (
+            ) : sorted.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  No agents yet. Click "Add New Agent" to get started.
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  {search ? "No matching agents." : 'No agents yet. Click "Add New Agent" to get started.'}
                 </TableCell>
               </TableRow>
             ) : (
-              agents.map((agent) => (
+              sorted.map((agent) => (
                 <TableRow key={agent.id}>
                   <TableCell className="font-medium">{agent.name}</TableCell>
                   <TableCell className="capitalize">{agent.type}</TableCell>
@@ -290,12 +339,104 @@ export default function Agents() {
                     </Badge>
                   </TableCell>
                   <TableCell>{format(new Date(agent.created_at), "MMM d, yyyy")}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={agent.status === "active"
+                          ? "text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                          : "text-muted-foreground"}
+                        onClick={() => toggleStatus.mutate({
+                          id: agent.id,
+                          newStatus: agent.status === "active" ? "paused" : "active",
+                        })}
+                        disabled={toggleStatus.isPending}
+                      >
+                        {agent.status === "active" ? (
+                          <><Pause className="h-4 w-4 mr-1" /> Pause</>
+                        ) : (
+                          <><Play className="h-4 w-4 mr-1" /> Resume</>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setViewAgent(agent)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" /> View
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Agent</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{agent.name}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() => deleteAgent.mutate(agent.id)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* View Agent Side Panel */}
+      <Sheet open={!!viewAgent} onOpenChange={(o) => { if (!o) setViewAgent(null); }}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>{viewAgent?.name}</SheetTitle>
+          </SheetHeader>
+          {viewAgent && (
+            <div className="space-y-6 mt-6">
+              <div className="space-y-2">
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Webhook URL</Label>
+                <div className="flex items-center gap-2">
+                  <Input readOnly value={webhookUrl(viewAgent.id)} className="font-mono text-xs" />
+                  <Button size="icon" variant="outline" onClick={() => handleCopy(webhookUrl(viewAgent.id), `view-url-${viewAgent.id}`)}>
+                    {copiedField === `view-url-${viewAgent.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Webhook Secret</Label>
+                <div className="flex items-center gap-2">
+                  <Input readOnly value={viewAgent.webhook_secret} className="font-mono text-xs" />
+                  <Button size="icon" variant="outline" onClick={() => handleCopy(viewAgent.webhook_secret, `view-secret-${viewAgent.id}`)}>
+                    {copiedField === `view-secret-${viewAgent.id}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Description</Label>
+                <p className="text-sm">{viewAgent.description || "No description."}</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground text-xs uppercase tracking-wider">Owner</Label>
+                <p className="text-sm">{viewAgent.owner_email}</p>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

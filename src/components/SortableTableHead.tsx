@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { TableHead } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -61,12 +62,10 @@ export function useTableSort(defaultKey: string, defaultDir: "asc" | "desc" = "a
       if (av == null && bv == null) return 0;
       if (av == null) return 1;
       if (bv == null) return -1;
-      const cmp = typeof av === "string" ? av.localeCompare(bv) : av - bv;
-      return sortDir === "asc" ? cmp : -cmp;
+      if (typeof av === "string") return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      return sortDir === "asc" ? av - bv : bv - av;
     });
   };
 
   return { sortKey, sortDir, onSort, sortFn };
 }
-
-import { useState } from "react";
